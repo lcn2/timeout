@@ -1,9 +1,9 @@
 /*
  * timeout - run a command and timeout after a period of time
  *
- * @(#) $Revision$
- * @(#) $Id$
- * @(#) $Source$
+ * @(#) $Revision: 1.1 $
+ * @(#) $Id: timeout.c,v 1.1 2004/04/14 08:16:46 chongo Exp root $
+ * @(#) $Source: /usr/local/src/bin/timeout/RCS/timeout.c,v $
  *
  * Copyright (c) 2004 by Landon Curt Noll.  All Rights Reserved.
  *
@@ -44,6 +44,9 @@
 /* #define UNUSED to nothing if this gives you a syntax error */
 #define UNUSED __attribute__((unused))	/* new ANSI arg not used attribute */
 
+#if !defined(HZ)
+# define HZ 100	/* guess */
+#endif
 
 /*
  * static and globals
