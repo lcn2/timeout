@@ -1,8 +1,8 @@
 /*
  * timeout - run a command and timeout after a period of time
  *
- * @(#) $Revision: 1.1 $
- * @(#) $Id: timeout.c,v 1.1 2004/04/14 08:16:46 chongo Exp root $
+ * @(#) $Revision: 1.2 $
+ * @(#) $Id: timeout.c,v 1.2 2015/09/06 06:14:21 root Exp $
  * @(#) $Source: /usr/local/src/bin/timeout/RCS/timeout.c,v $
  *
  * Copyright (c) 2004 by Landon Curt Noll.  All Rights Reserved.

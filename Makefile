@@ -3,8 +3,8 @@
 #
 # timeout - run a command and timeout after a period of time
 #
-# @(#) $Revision: 1.1 $
-# @(#) $Id: Makefile,v 1.1 2004/04/14 08:16:46 chongo Exp root $
+# @(#) $Revision: 1.2 $
+# @(#) $Id: Makefile,v 1.2 2015/09/06 06:58:46 root Exp $
 # @(#) $Source: /usr/local/src/bin/timeout/RCS/Makefile,v $
 #
 # Copyright (c) 2004 by Landon Curt Noll.  All Rights Reserved.
