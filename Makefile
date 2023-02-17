@@ -1,13 +1,8 @@
-#!/bin/make
-# @(#)Makefile	1.2 04 May 1995 02:06:57
+#!/usr/bin/env make
 #
 # timeout - run a command and timeout after a period of time
 #
-# @(#) $Revision: 1.2 $
-# @(#) $Id: Makefile,v 1.2 2015/09/06 06:58:46 root Exp $
-# @(#) $Source: /usr/local/src/bin/timeout/RCS/Makefile,v $
-#
-# Copyright (c) 2004 by Landon Curt Noll.  All Rights Reserved.
+# Copyright (c) 2004,2023 by Landon Curt Noll.  All Rights Reserved.
 #
 # Permission to use, copy, modify, and distribute this software and
 # its documentation for any purpose and without fee is hereby granted,
@@ -32,9 +27,12 @@
 # Share and enjoy! :-)
 
 
-SHELL= /bin/sh
+SHELL= bash
 CC= cc
 CFLAGS= -O3 -g3 -Wall -W
+RM= rm
+CP= cp
+CHMOD= chmod
 
 TOPNAME= bin
 INSTALL= install
@@ -52,10 +50,10 @@ configure:
 	@echo nothing to configure
 
 clean quick_clean quick_distclean distclean:
-	rm -f timeout.o
+	${RM} -f timeout.o
 
 clobber quick_clobber: clean
-	rm -f timeout
+	${RM} -f timeout
 
 install: all
 	${INSTALL} -m 0555 ${TARGETS} ${DESTDIR}
