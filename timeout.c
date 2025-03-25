@@ -127,6 +127,8 @@ pr_usage(FILE *stream)
     /* paranoia if no / is found */
     if (prog == NULL) {
 	prog = program;
+    } else {
+	++prog;
     }
 
     /*
