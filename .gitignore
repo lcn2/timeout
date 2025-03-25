@@ -1,1 +1,3 @@
 timeout
+timeout.dSYM
+timeout.o

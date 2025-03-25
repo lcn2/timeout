@@ -1,11 +1,7 @@
 /*
  * timeout - run a command and timeout after a period of time
  *
- * @(#) $Revision: 1.2 $
- * @(#) $Id: timeout.c,v 1.2 2015/09/06 06:14:21 root Exp $
- * @(#) $Source: /usr/local/src/bin/timeout/RCS/timeout.c,v $
- *
- * Copyright (c) 2004 by Landon Curt Noll.  All Rights Reserved.
+ * Copyright (c) 2004,2015,2023,2025 by Landon Curt Noll.  All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and
  * its documentation for any purpose and without fee is hereby granted,
@@ -25,9 +21,12 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
- * chongo (Landon Curt Noll, http://www.isthe.com/chongo/index.html) /\oo/\
+ * chongo (Landon Curt Noll) /\oo/\
  *
- * Share and enjoy! :-)
+ * http://www.isthe.com/chongo/index.html
+ * https://github.com/lcn2
+ *
+ * Share and enjoy!  :-)
  */
 
 #include <stdio.h>
@@ -41,6 +40,13 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+
+/*
+ * official version
+ */
+#define VERSION "1.2.1 2025-03-24"	    /* format: major.minor YYYY-MM-DD */
+
+
 /* #define UNUSED to nothing if this gives you a syntax error */
 #define UNUSED __attribute__((unused))	/* new ANSI arg not used attribute */
 
@@ -48,15 +54,87 @@
 # define HZ 100	/* guess */
 #endif
 
+
 /*
- * static and globals
+ * usage message
  */
-static char *program = "";	/* our name */
+static const char * const usage =
+  "usage: %s [-h] [-V] [-n] seconds cmd [arg ...]\n"
+        "\n"
+        "    -h            print help message and exit\n"
+        "    -V            print version string and exit\n"
+        "\n"
+        "    -n            noop - do nothing (def: do the tasks)\n"
+        "\n"
+	"    seconds       seconds until timeout (may be a float)\n"
+	"    cmd           command to execute until timeout\n"
+	"   [arg...]       optional args to the command\n"
+        "\n"
+	"Exit codes:\n"
+	"    0         all OK\n"
+	"    2         -h and help string printed or -V and version string printed\n"
+	"    3         command line error\n"
+	" >= 10        internal error\n"
+        "\n"
+        "%s version: %s\n";
+
+
+/*
+ * static declarations
+ */
+static char *program = NULL;	/* our name */
+static char *prog = NULL;	/* basename of program */
+static const char * const version = VERSION;
+/**/
 static pid_t pidofchild = -1;	/* process ID of the child command */
 /**/
+static void pr_usage(FILE *stream);
 static void child(char **argv);
 static void killchild(void);
 static void sigchld(UNUSED int signum);
+
+
+/*
+ * pr_usage - print usage message
+ *
+ * given:
+ *
+ *    stream - print usage message on stream, NULL ==> stderr
+ */
+static void
+pr_usage(FILE *stream)
+{
+    /*
+     * NULL stream means stderr
+     */
+    if (stream == NULL) {
+	stream = stderr;
+    }
+
+    /*
+     * firewall - change program if NULL
+     */
+    if (program == NULL) {
+	program = "((NULL))";
+    }
+
+    /*
+     * firewall set name if NULL
+     */
+    if (prog == NULL) {
+	prog = rindex(program, '/');
+    }
+    /* paranoia if no / is found */
+    if (prog == NULL) {
+	prog = program;
+    }
+
+    /*
+     * print usage message to stderr
+     */
+    fprintf(stream, usage, program, prog, version);
+}
+
 
 int
 main(int argc, char *argv[])
@@ -64,28 +142,67 @@ main(int argc, char *argv[])
     double timeout;		/* seconds until timeout */
     struct timeval timer;	/* single timer for timeout seconds */
     struct sigaction act;	/* sigchld signal action */
+    int noop = 0;		/* 1 => -n was given, no op */
+    int i;
 
     /*
      * parse args
      */
     program = argv[0];
-    if (argc < 3) {
-	fprintf(stderr, "usage: %s timeout cmd [arg ...]\n"
-			"\n"
-			"\ttimeout   seconds until timeout (may be a float)\n"
-			"\tcmd       command to execute until timeout\n"
-			"\t[arg...]  optional args to the command\n",
-			program);
-    	exit(1);
+    while ((i = getopt(argc, argv, ":hVn")) != -1) {
+	switch (i) {
+
+	case 'h':		    /* -h - print help message and exit */
+	    pr_usage(stderr);
+	    exit(2); /*ooo*/
+	    /*NOTREACHED*/
+
+	case 'V':		    /* -V - print version string and exit */
+	    (void) printf("%s\n", version);
+	    exit(3); /*ooo*/
+	    /*NOTREACHED*/
+
+	case 'n':		    /* -n - noop: do nothing */
+	    noop = 1;
+	    break;
+
+	case ':':
+            (void) fprintf(stderr, "%s: ERROR: requires an argument -- %c\n", program, optopt);
+	    pr_usage(stderr);
+	    exit(3); /*ooo*/
+	    /*NOTREACHED*/
+
+	case '?':
+            (void) fprintf(stderr, "%s: ERROR: illegal option -- %c\n", program, optopt);
+	    pr_usage(stderr);
+	    exit(3); /*ooo*/
+	    /*NOTREACHED*/
+
+	default:
+	    fprintf(stderr, "%s: ERROR: invalid -flag\n", program);
+	    exit(3); /*ooo*/
+	    /*NOTREACHED*/
+	}
     }
-    timeout = strtod(argv[1], NULL);
+    /* skip over command line options */
+    argv += optind;
+    argc -= optind;
+    /* check the arg count */
+    if (argc < 2) {
+	fprintf(stderr, "%s: ERROR: expected at least 2 args, found: %d\n", program, argc);
+	pr_usage(stderr);
+	exit(3); /*ooo*/
+	/*NOTREACHED*/
+    }
+    /**/
+    timeout = strtod(argv[0], NULL);
     if (timeout <= 0.0) {
-	fprintf(stderr, "%s: timeout must be > 0.0\n", program);
-	exit(2);
+	fprintf(stderr, "%s: ERROR: timeout: %s must be > 0.0\n", program, argv[0]);
+	exit(3); /*ooo*/
     }
     /* advance over ourname and timeout arg */
-    argc -= 2;
-    argv += 2;
+    --argc;
+    ++argv;
 
     /*
      * setup to catch child exiting
@@ -97,9 +214,16 @@ main(int argc, char *argv[])
     act.sa_handler = sigchld;
     act.sa_flags = SA_NOCLDSTOP|SA_RESTART;
     if (sigaction(SIGCHLD, &act, NULL) < 0) {
-	fprintf(stderr, "%s: main: SIGCHLD sigaction failed: %s\n",
+	fprintf(stderr, "%s: ERROR: main: SIGCHLD sigaction failed: %s\n",
 		program, strerror(errno));
-    	exit(3);
+	exit(10); /*coo*/
+    }
+
+    /*
+     * do nothing more if -n
+     */
+    if (noop) {
+	exit(0); /*ooo*/
     }
 
     /*
@@ -107,11 +231,11 @@ main(int argc, char *argv[])
      */
     pidofchild = fork();
     if (pidofchild < 0) {
-	fprintf(stderr, "%s: main: fork failed: %s\n",
+	fprintf(stderr, "%s: ERROR: main: fork failed: %s\n",
 		program, strerror(errno));
-    	exit(4);
+	exit(11);
     } else if (pidofchild == 0) {
-    	/* child code */
+	/* child code */
 	child(argv);
 	/*NOTREACHED*/
     }
@@ -145,7 +269,7 @@ main(int argc, char *argv[])
      * kill the child process if it exists
      */
     killchild();
-    exit(0);
+    exit(12);
 }
 
 
@@ -168,7 +292,7 @@ child(char **argv)
     if (sigaction(SIGCHLD, &act, NULL) < 0) {
 	fprintf(stderr, "%s: child pid: %d: SIGCHLD sigaction failed: %s\n",
 		program, (int)getpid(), strerror(errno));
-	exit(5);
+	exit(13);
     }
 
     /*
@@ -177,11 +301,11 @@ child(char **argv)
     if (execvp(argv[0], argv) < 0) {
 	fprintf(stderr, "%s: child pid: %d: exec of %s failed: %s\n",
 		program, (int)getpid(), argv[0], strerror(errno));
-	exit(6);
+	exit(14);
     }
     fprintf(stderr, "%s: child pid: %d: fall thru exec code!\n",
-    		    program, (int)getpid());
-    exit(7);
+		    program, (int)getpid());
+    exit(15);
 }
 
 
@@ -260,7 +384,7 @@ killchild(void)
     if (kill(pidofchild, 0) >= 0) {
 	fprintf(stderr, "%s: process %d will not die\n",
 			program, (int)pidofchild);
-    	exit(9);
+	exit(16);
     }
     return;
 }
@@ -289,5 +413,5 @@ sigchld(UNUSED int signum)
     /*
      * terminate parent
      */
-    exit(0);
+    exit(0); /*ooo*/
 }
