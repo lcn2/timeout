@@ -1,6 +1,6 @@
 # timeout
 
-run a command and timeout after a period of time
+Run a command and timeout after a period of time.
 
 
 # To install
@@ -11,9 +11,16 @@ sudo make install clobber
 ```
 
 
-# To use
+# Example
 
 ```sh
+$ /usr/local/bin/timeout 4.5 /usr/bin/tail -f /var/log/messages
+```
+
+
+# To use
+
+```
 timeout [-h] [-V] [-n] seconds cmd [arg ...]
 
     -h            print help message and exit
@@ -32,13 +39,6 @@ Exit codes:
  >= 10        internal error
 
 /timeout version: 1.2.1 2025-03-24
-```
-
-
-# Example
-
-```sh
-/usr/local/bin/timeout 4.5 /usr/bin/tail -f /var/log/messages
 ```
 
 
